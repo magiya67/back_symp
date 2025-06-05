@@ -3,27 +3,24 @@ version: '3.8'
 services:
   nginx:
     image: nginx:alpine
-    container_name: symfony_nginx
     ports:
       - "8080:80"
     volumes:
-      - ./:/var/www/project
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./:/var/www/symfony
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
     depends_on:
       - php
     networks:
-      - symfony_network
+      - symfony-network
 
   php:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    container_name: symfony_php
     volumes:
-      - ./:/var/www/project
-    working_dir: /var/www/project
+      - ./:/var/www/symfony
     networks:
-      - symfony_network
+      - symfony-network
 
   db:
     image: postgres:15-alpine
@@ -54,7 +51,7 @@ services:
 ###< doctrine/doctrine-bundle ###
 
 networks:
-  symfony_network:
+  symfony-network:
     driver: bridge
 
 volumes:
