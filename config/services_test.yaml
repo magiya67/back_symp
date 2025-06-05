@@ -1,0 +1,9 @@
+parameters:
+    houses_file: '%env(TEMP_DIR)%/test_data/houses.json'
+    bookings_file: '%env(TEMP_DIR)%/test_data/bookings.json'
+
+services:
+    App\Service\BookingDataService:
+        arguments:
+            $housesFile: '%env(TEMP_DIR)%/test_data/houses.json'
+            $bookingsFile: '%env(TEMP_DIR)%/test_data/bookings.json' 

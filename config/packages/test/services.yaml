@@ -1,0 +1,24 @@
+parameters:
+    test.houses_file: '%kernel.cache_dir%/test_houses.csv'
+    test.bookings_file: '%kernel.cache_dir%/test_bookings.csv'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '%kernel.project_dir%/src/'
+        exclude:
+            - '%kernel.project_dir%/src/DependencyInjection/'
+            - '%kernel.project_dir%/src/Entity/'
+            - '%kernel.project_dir%/src/Kernel.php'
+
+    App\Controller\:
+        resource: '%kernel.project_dir%/src/Controller'
+        tags: ['controller.service_arguments']
+
+    App\Service\BookingDataService:
+        arguments:
+            $housesFile: '%test.houses_file%'
+            $bookingsFile: '%test.bookings_file%' 
