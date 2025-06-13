@@ -51,9 +51,9 @@ class BookingDataService
     {
         try {
             if (($handle = fopen($this->housesFile, "w")) !== FALSE) {
-                // Always write headers
-                $headers = ['id', 'name', 'price', 'location', 'description', 'image'];
-                fputcsv($handle, $headers, ',', '"', '\\');
+                // Пишем заголовок
+                $header = ['id', 'name', 'price', 'location', 'description', 'image'];
+                fputcsv($handle, $header, ',', '"', '\\');
                 foreach ($houses as $house) {
                     fputcsv($handle, $house, ',', '"', '\\');
                 }

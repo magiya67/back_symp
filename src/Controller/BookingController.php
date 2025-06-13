@@ -17,7 +17,7 @@ final class BookingController extends AbstractController
     ) {
     }
 
-    #[Route('', name: 'api_booking_create', methods: ['POST'])]
+    #[Route('/create', name: 'api_booking_create', methods: ['POST'])]
     public function createBooking(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -49,7 +49,7 @@ final class BookingController extends AbstractController
         return $this->json(['success' => true, 'booking' => $booking]);
     }
 
-    #[Route('/{id}', name: 'api_booking_update', methods: ['PUT'])]
+    #[Route('/booking_update/{id}', name: 'api_booking_update', methods: ['PUT'])]
     public function updateBooking(int $id, Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -65,7 +65,7 @@ final class BookingController extends AbstractController
         return $this->json(['success' => true]);
     }
 
-    #[Route('/{id}', name: 'api_bookings_delete', methods: ['DELETE'])]
+    #[Route('/booking_delete/{id}', name: 'api_booking_delete', methods: ['DELETE'])]
     public function deleteBooking(int $id): JsonResponse
     {
         try {
@@ -88,7 +88,7 @@ final class BookingController extends AbstractController
         }
     }
 
-    #[Route('/{id}', name: 'api_booking_get', methods: ['GET'])]
+    #[Route('/booking_get/{id}', name: 'api_booking_get', methods: ['GET'])]
     public function getBooking(int $id): JsonResponse
     {
         $bookings = $this->bookingDataService->getBookings();
@@ -100,7 +100,7 @@ final class BookingController extends AbstractController
         return $this->json(['error' => 'Booking not found'], Response::HTTP_NOT_FOUND);
     }
 
-    #[Route('', name: 'api_bookings_list', methods: ['GET'])]
+    #[Route('/booking_list', name: 'api_bookings_list', methods: ['GET'])]
     public function listBookings(): JsonResponse
     {
         $bookings = $this->bookingDataService->getBookings();

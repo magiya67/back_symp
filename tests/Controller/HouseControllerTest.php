@@ -63,7 +63,7 @@ class HouseControllerTest extends WebTestCase
 
     public function testGetHouses(): void
     {
-        $this->client->request('GET', '/api/houses');
+        $this->client->request('GET', '/api/houses/list');
         $this->assertResponseIsSuccessful();
         $this->assertResponseHeaderSame('Content-Type', 'application/json');
         $response = json_decode($this->client->getResponse()->getContent(), true);
@@ -74,7 +74,7 @@ class HouseControllerTest extends WebTestCase
 
     public function testGetHouse(): void
     {
-        $this->client->request('GET', '/api/houses/1');
+        $this->client->request('GET', '/api/houses/get/1');
         $this->assertResponseIsSuccessful();
         $this->assertResponseHeaderSame('Content-Type', 'application/json');
         $response = json_decode($this->client->getResponse()->getContent(), true);
@@ -83,7 +83,7 @@ class HouseControllerTest extends WebTestCase
 
     public function testGetHouseNotFound(): void
     {
-        $this->client->request('GET', '/api/houses/999');
+        $this->client->request('GET', '/api/houses/get/999');
         
         $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
     }
@@ -92,7 +92,7 @@ class HouseControllerTest extends WebTestCase
     {
         $this->client->request(
             'POST',
-            '/api/houses',
+            '/api/houses/create',
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
@@ -123,24 +123,11 @@ class HouseControllerTest extends WebTestCase
         $this->assertEquals('New House', $houses[1]['name']);
     }
 
-    private function getHousesFromFile(): array
-    {
-        $houses = [];
-        if (($handle = fopen($this->housesFile, "r")) !== FALSE) {
-            $headers = fgetcsv($handle, 0, ',', '"', '\\');
-            while (($data = fgetcsv($handle, 0, ',', '"', '\\')) !== FALSE) {
-                $houses[] = array_combine($headers, $data);
-            }
-            fclose($handle);
-        }
-        return $houses;
-    }
-
     public function testCreateHouseInvalidData(): void
     {
         $this->client->request(
             'POST',
-            '/api/houses',
+            '/api/houses/create',
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
@@ -160,7 +147,7 @@ class HouseControllerTest extends WebTestCase
     {
         $this->client->request(
             'PUT',
-            '/api/houses/1',
+            '/api/houses/update/1',
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
@@ -188,7 +175,7 @@ class HouseControllerTest extends WebTestCase
     {
         $this->client->request(
             'PUT',
-            '/api/houses/999',
+            '/api/houses/update/999',
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
@@ -203,7 +190,7 @@ class HouseControllerTest extends WebTestCase
 
     public function testDeleteHouse(): void
     {
-        $this->client->request('DELETE', '/api/houses/1');
+        $this->client->request('DELETE', '/api/houses/delete/1');
         
         $this->assertResponseIsSuccessful();
         $this->assertResponseHeaderSame('Content-Type', 'application/json');
@@ -218,7 +205,7 @@ class HouseControllerTest extends WebTestCase
 
     public function testDeleteHouseNotFound(): void
     {
-        $this->client->request('DELETE', '/api/houses/999');
+        $this->client->request('DELETE', '/api/houses/delete/999');
         
         $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
         $response = json_decode($this->client->getResponse()->getContent(), true);
@@ -239,7 +226,7 @@ class HouseControllerTest extends WebTestCase
         }
         fclose($fp);
 
-        $this->client->request('DELETE', '/api/houses/1');
+        $this->client->request('DELETE', '/api/houses/delete/1');
         
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
         $response = json_decode($this->client->getResponse()->getContent(), true);
@@ -263,10 +250,36 @@ class HouseControllerTest extends WebTestCase
         }
         fclose($fp);
 
-        $this->client->request('DELETE', '/api/houses/1');
+        $this->client->request('DELETE', '/api/houses/delete/1');
         
         $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
         $response = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertEquals(['error' => 'House not found'], $response);
+    }
+
+    public function testDeleteHouseWithFreeList(): void
+    {
+        $this->client->request('GET', '/api/houses/free');
+        
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseHeaderSame('Content-Type', 'application/json');
+        
+        $response = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertIsArray($response);
+        $this->assertCount(1, $response);
+        $this->assertEquals('Test House', $response[0]['name']);
+    }
+
+    private function getHousesFromFile(): array
+    {
+        $houses = [];
+        if (($handle = fopen($this->housesFile, "r")) !== FALSE) {
+            $headers = fgetcsv($handle, 0, ',', '"', '\\');
+            while (($data = fgetcsv($handle, 0, ',', '"', '\\')) !== FALSE) {
+                $houses[] = array_combine($headers, $data);
+            }
+            fclose($handle);
+        }
+        return $houses;
     }
 } 

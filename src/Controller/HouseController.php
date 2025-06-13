@@ -11,6 +11,8 @@ use Symfony\Component\HttpFoundation\Request;
 #[Route('/api/houses')]
 final class HouseController extends AbstractController
 {
+    private const UPDATEABLE_FIELDS = ['name', 'address', 'price', 'location', 'description', 'image'];
+
     public function __construct(
         private readonly BookingDataService $bookingDataService
     ) {
@@ -27,7 +29,7 @@ final class HouseController extends AbstractController
         return $this->json(array_values($freeHouses));
     }
 
-    #[Route('/{id}', name: 'api_houses_delete', methods: ['DELETE'])]
+    #[Route('/delete/{id}', name: 'api_houses_delete', methods: ['DELETE'])]
     public function deleteHouse(int $id): JsonResponse
     {
         try {
@@ -59,7 +61,7 @@ final class HouseController extends AbstractController
         }
     }
 
-    #[Route('/{id}', name: 'api_houses_update', methods: ['PUT'])]
+    #[Route('/update/{id}', name: 'api_houses_update', methods: ['PUT'])]
     public function updateHouse(int $id, Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -73,8 +75,7 @@ final class HouseController extends AbstractController
             return $this->json(['error' => 'House not found'], 404);
         }
 
-        // Обновляем только разрешённые поля (например, name, address, price, location, description, image)
-        foreach (['name', 'address', 'price', 'location', 'description', 'image'] as $field) {
+        foreach (self::UPDATEABLE_FIELDS as $field) {
             if (isset($data[$field])) {
                 $houses[$houseIndex][$field] = $data[$field];
             }
@@ -83,12 +84,27 @@ final class HouseController extends AbstractController
         return $this->json($houses[$houseIndex]);
     }
 
-    #[Route('', name: 'api_houses_create', methods: ['POST'])]
-    public function createHouse(\Symfony\Component\HttpFoundation\Request $request): JsonResponse
+    #[Route('/create', name: 'api_houses_create', methods: ['POST'])]
+    public function createHouse(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-        if (!is_array($data) || empty($data['name']) || !isset($data['price'], $data['location'], $data['description'], $data['image'])) {
+        if (!is_array($data)) {
             return $this->json(['error' => 'Invalid input'], 400);
+        }
+        if (empty($data['name'])) {
+            return $this->json(['error' => 'Name is required'], 400);
+        }
+        if (!isset($data['price'])) {
+            return $this->json(['error' => 'Price is required'], 400);
+        }
+        if (!isset($data['location'])) {
+            return $this->json(['error' => 'Location is required'], 400);
+        }
+        if (!isset($data['description'])) {
+            return $this->json(['error' => 'Description is required'], 400);
+        }
+        if (!isset($data['image'])) {
+            return $this->json(['error' => 'Image is required'], 400);
         }
 
         $houses = $this->bookingDataService->getHouses();
@@ -107,7 +123,7 @@ final class HouseController extends AbstractController
         return $this->json($house);
     }
 
-    #[Route('/{id}', name: 'api_houses_get', methods: ['GET'])]
+    #[Route('/get/{id}', name: 'api_houses_get', methods: ['GET'])]
     public function getHouse(int $id): JsonResponse
     {
         $houses = $this->bookingDataService->getHouses();
@@ -120,7 +136,7 @@ final class HouseController extends AbstractController
         return $this->json($houses[$houseIndex]);
     }
 
-    #[Route('', name: 'api_houses_get_all', methods: ['GET'])]
+    #[Route('/list', name: 'api_houses_get_all', methods: ['GET'])]
     public function getHouses(): JsonResponse
     {
         $houses = $this->bookingDataService->getHouses();

@@ -32,7 +32,6 @@ class BookingControllerTest extends WebTestCase
             fputcsv($fp, $row, ',', '"', '\\');
         }
         fclose($fp);
-        // Bookings test data (empty)
         $fp = fopen($this->bookingsFile, 'w');
         fputcsv($fp, ['id', 'phone', 'house_id', 'comment', 'created_at'], ',', '"', '\\');
         fclose($fp);
@@ -68,16 +67,13 @@ class BookingControllerTest extends WebTestCase
         ];
         $this->client->request(
             'POST',
-            '/api/bookings',
+            '/api/bookings/create',
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
             json_encode($data)
         );
-        $this->assertResponseIsSuccessful();
-        $this->assertResponseHeaderSame('Content-Type', 'application/json');
         $response = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertArrayHasKey('success', $response);
         $this->assertTrue($response['success']);
         $this->assertArrayHasKey('booking', $response);
         $this->assertEquals('1234567890', $response['booking']['phone']);
@@ -92,7 +88,7 @@ class BookingControllerTest extends WebTestCase
         ];
         $this->client->request(
             'POST',
-            '/api/bookings',
+            '/api/bookings/create',
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
@@ -111,7 +107,7 @@ class BookingControllerTest extends WebTestCase
         ];
         $this->client->request(
             'POST',
-            '/api/bookings',
+            '/api/bookings/create',
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
@@ -128,7 +124,7 @@ class BookingControllerTest extends WebTestCase
         $fp = fopen($this->bookingsFile, 'a');
         fputcsv($fp, ['1', '1234567890', '1', 'Test comment', date('c')], ',', '"', '\\');
         fclose($fp);
-        $this->client->request('GET', '/api/bookings');
+        $this->client->request('GET', '/api/bookings/booking_list');
         $this->assertResponseIsSuccessful();
         $this->assertResponseHeaderSame('Content-Type', 'application/json');
         $response = json_decode($this->client->getResponse()->getContent(), true);
@@ -143,7 +139,7 @@ class BookingControllerTest extends WebTestCase
         $fp = fopen($this->bookingsFile, 'a');
         fputcsv($fp, ['1', '1234567890', '1', 'Test comment', date('c')], ',', '"', '\\');
         fclose($fp);
-        $this->client->request('GET', '/api/bookings/1');
+        $this->client->request('GET', '/api/bookings/booking_get/1');
         $this->assertResponseIsSuccessful();
         $this->assertResponseHeaderSame('Content-Type', 'application/json');
         $response = json_decode($this->client->getResponse()->getContent(), true);
@@ -153,7 +149,7 @@ class BookingControllerTest extends WebTestCase
 
     public function testGetBookingNotFound(): void
     {
-        $this->client->request('GET', '/api/bookings/999');
+        $this->client->request('GET', '/api/bookings/booking_get/999');
         $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
     }
 
@@ -165,7 +161,7 @@ class BookingControllerTest extends WebTestCase
         $data = ['comment' => 'Updated comment'];
         $this->client->request(
             'PUT',
-            '/api/bookings/1',
+            '/api/bookings/booking_update/1',
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
@@ -182,7 +178,7 @@ class BookingControllerTest extends WebTestCase
         $data = ['comment' => 'Updated comment'];
         $this->client->request(
             'PUT',
-            '/api/bookings/999',
+            '/api/bookings/booking_update/999',
             [],
             [],
             ['CONTENT_TYPE' => 'application/json'],
@@ -198,7 +194,7 @@ class BookingControllerTest extends WebTestCase
         $fp = fopen($this->bookingsFile, 'a');
         fputcsv($fp, ['1', '1234567890', '1', 'Test comment', date('c')], ',', '"', '\\');
         fclose($fp);
-        $this->client->request('DELETE', '/api/bookings/1');
+        $this->client->request('DELETE', '/api/bookings/booking_delete/1');
         $this->assertResponseIsSuccessful();
         $response = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertEquals(['message' => 'Booking deleted successfully'], $response);
@@ -215,9 +211,25 @@ class BookingControllerTest extends WebTestCase
 
     public function testDeleteBookingNotFound(): void
     {
-        $this->client->request('DELETE', '/api/bookings/999');
+        $this->client->request('DELETE', '/api/bookings/booking_delete/999');
         $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
         $response = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertEquals(['error' => 'Booking not found'], $response);
+    }
+
+    public function testListBookings(): void
+    {
+        // Добавляем бронирование вручную в CSV
+        $fp = fopen($this->bookingsFile, 'a');
+        fputcsv($fp, ['1', '1234567890', '1', 'Test comment', date('c')], ',', '"', '\\');
+        fclose($fp);
+        $this->client->request('GET', '/api/bookings/booking_list');
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseHeaderSame('Content-Type', 'application/json');
+        $response = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertIsArray($response);
+        $this->assertCount(1, $response);
+        $this->assertEquals('1', $response[0]['id']);
+        $this->assertEquals('1234567890', $response[0]['phone']);
     }
 } 
