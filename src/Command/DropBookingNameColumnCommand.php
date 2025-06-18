@@ -1,18 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use Doctrine\DBAL\Connection;
+use Override;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/** @psalm-suppress UnusedClass */
 #[AsCommand(
     name: 'app:booking:drop-name-column',
-    description: 'Удаляет столбец name из таблицы booking, если он существует.'
+    description: 'Удаляет колонку name из таблицы booking.'
 )]
-class DropBookingNameColumnCommand extends Command
+final class DropBookingNameColumnCommand extends Command
 {
     private Connection $connection;
 
@@ -22,10 +26,12 @@ class DropBookingNameColumnCommand extends Command
         $this->connection = $connection;
     }
 
+    #[Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->connection->executeStatement('ALTER TABLE booking DROP COLUMN IF EXISTS name');
-        $output->writeln('<info>Столбец name удалён (если он существовал).</info>');
+        $output->writeln('<info>Колонка name удалена из таблицы booking.</info>');
+
         return Command::SUCCESS;
     }
-} 
+}

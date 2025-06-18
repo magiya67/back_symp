@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\HouseRepository;
@@ -8,7 +10,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: HouseRepository::class)]
-class House
+final class House
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -19,7 +21,7 @@ class House
     private ?string $name = null;
 
     #[ORM\Column]
-    private ?float $price = null;
+    private ?int $price = null;
 
     #[ORM\Column(length: 255)]
     private ?string $location = null;
@@ -27,7 +29,7 @@ class House
     #[ORM\Column(type: 'text')]
     private ?string $description = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $image = null;
 
     #[ORM\OneToMany(mappedBy: 'house', targetEntity: Booking::class, orphanRemoval: true)]
@@ -51,17 +53,19 @@ class House
     public function setName(string $name): static
     {
         $this->name = $name;
+
         return $this;
     }
 
-    public function getPrice(): ?float
+    public function getPrice(): ?int
     {
         return $this->price;
     }
 
-    public function setPrice(float $price): static
+    public function setPrice(int $price): static
     {
         $this->price = $price;
+
         return $this;
     }
 
@@ -73,6 +77,7 @@ class House
     public function setLocation(string $location): static
     {
         $this->location = $location;
+
         return $this;
     }
 
@@ -84,6 +89,7 @@ class House
     public function setDescription(string $description): static
     {
         $this->description = $description;
+
         return $this;
     }
 
@@ -92,9 +98,10 @@ class House
         return $this->image;
     }
 
-    public function setImage(string $image): static
+    public function setImage(?string $image): static
     {
         $this->image = $image;
+
         return $this;
     }
 
@@ -106,22 +113,29 @@ class House
         return $this->bookings;
     }
 
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     */
     public function addBooking(Booking $booking): static
     {
-        if (!$this->bookings->contains($booking)) {
-            $this->bookings->add($booking);
-            $booking->setHouse($this);
-        }
+        $this->bookings->add($booking);
+        $booking->setHouse($this);
+
         return $this;
     }
 
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     */
     public function removeBooking(Booking $booking): static
     {
         if ($this->bookings->removeElement($booking)) {
+            // set the owning side to null (unless already changed)
             if ($booking->getHouse() === $this) {
                 $booking->setHouse(null);
             }
         }
+
         return $this;
     }
-} 
+}

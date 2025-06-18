@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\Booking;
@@ -9,18 +11,24 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<Booking>
  *
- * @method Booking|null find($id, $lockMode = null, $lockVersion = null)
- * @method Booking|null findOneBy(array $criteria, array $orderBy = null)
+ * @method null|Booking find($id, $lockMode = null, $lockVersion = null)
+ * @method null|Booking findOneBy(array $criteria, array $orderBy = null)
  * @method Booking[]    findAll()
  * @method Booking[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class BookingRepository extends ServiceEntityRepository
+final class BookingRepository extends ServiceEntityRepository
 {
+    /**
+     * @psalm-suppress UnusedParam, PossiblyUnusedMethod
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Booking::class);
     }
 
+    /**
+     * @psalm-suppress UnusedParam
+     */
     public function save(Booking $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
@@ -30,6 +38,9 @@ class BookingRepository extends ServiceEntityRepository
         }
     }
 
+    /**
+     * @psalm-suppress UnusedParam
+     */
     public function remove(Booking $entity, bool $flush = false): void
     {
         $this->getEntityManager()->remove($entity);
@@ -38,17 +49,4 @@ class BookingRepository extends ServiceEntityRepository
             $this->getEntityManager()->flush();
         }
     }
-
-    /**
-     * @return Booking[] Returns an array of Booking objects
-     */
-    public function findByHouse($houseId): array
-    {
-        return $this->createQueryBuilder('b')
-            ->andWhere('b.house = :val')
-            ->setParameter('val', $houseId)
-            ->orderBy('b.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
-    }
-} 
+}

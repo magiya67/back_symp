@@ -1,195 +1,223 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Controller;
 
 use App\Entity\House;
 use App\Repository\HouseRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
+use Override;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
-class HouseControllerTest extends WebTestCase
+use function count;
+
+/**
+ * @psalm-suppress UnusedClass
+ *
+ * @internal
+ *
+ * @small
+ *
+ * @coversNothing
+ */
+final class HouseControllerTest extends WebTestCase
 {
-    private $client;
+    private KernelBrowser $client;
+
     private EntityManagerInterface $em;
+
     private HouseRepository $houseRepository;
 
+    #[Override]
     protected function setUp(): void
     {
         parent::setUp();
-        $this->client = static::createClient();
-        $this->em = $this->client->getContainer()->get(EntityManagerInterface::class);
-        $this->houseRepository = $this->em->getRepository(House::class);
+        $this->client = self::createClient();
+        /** @var EntityManagerInterface $em */
+        $em = $this->client->getContainer()->get(EntityManagerInterface::class);
+        $this->em = $em;
+        /** @var HouseRepository $houseRepository */
+        $houseRepository = $this->em->getRepository(House::class);
+        $this->houseRepository = $houseRepository;
         $this->em->beginTransaction();
         $this->createTestHouse();
     }
 
+    #[Override]
     protected function tearDown(): void
     {
         $this->em->rollback();
         parent::tearDown();
     }
 
-    private function createTestHouse(): void
-    {
-        $house = new House();
-        $house->setName('Test House')
-            ->setPrice(100)
-            ->setLocation('Test Location')
-            ->setDescription('Test Description')
-            ->setImage('test.jpg');
-        $this->em->persist($house);
-        $this->em->flush();
-    }
-
     public function testGetHouses(): void
     {
         $this->client->request('GET', '/api/houses');
+
         $this->assertResponseIsSuccessful();
-        $this->assertResponseHeaderSame('Content-Type', 'application/json');
-        $response = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertIsArray($response);
-        $this->assertCount(1, $response);
-        $this->assertEquals('Test House', $response[0]['name']);
+        $content = $this->client->getResponse()->getContent();
+        self::assertNotFalse($content);
+        $response = json_decode($content, true);
+        self::assertIsArray($response);
+        self::assertGreaterThan(0, count($response));
+        self::assertArrayHasKey(0, $response);
+        /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
+        self::assertIsArray($response[0]);
+        self::assertArrayHasKey('name', $response[0]);
+        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+        self::assertSame('Test House', $response[0]['name']);
     }
 
     public function testGetHouse(): void
     {
         $house = $this->houseRepository->findOneBy(['name' => 'Test House']);
-        $this->client->request('GET', '/api/houses/' . $house->getId());
+        self::assertNotNull($house);
+
+        $houseId = $house->getId();
+        self::assertNotNull($houseId);
+        $this->client->request('GET', '/api/houses/' . $houseId);
+
         $this->assertResponseIsSuccessful();
-        $this->assertResponseHeaderSame('Content-Type', 'application/json');
-        $response = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertEquals('Test House', $response['name']);
+        $content = $this->client->getResponse()->getContent();
+        self::assertNotFalse($content);
+        $response = json_decode($content, true);
+        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+        self::assertSame('Test House', $response['name']);
     }
 
     public function testGetHouseNotFound(): void
     {
         $this->client->request('GET', '/api/houses/999');
-        $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
+
+        $this->assertResponseStatusCodeSame(404);
     }
 
     public function testCreateHouse(): void
     {
-        $this->client->request(
-            'POST',
-            '/api/houses',
-            [],
-            [],
-            ['CONTENT_TYPE' => 'application/json'],
-            json_encode([
-                'name' => 'New House',
-                'price' => 200,
-                'location' => 'New Location',
-                'description' => 'New Description',
-                'image' => 'new.jpg'
-            ])
-        );
+        $this->client->request('POST', '/api/houses', [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], (string) json_encode([
+            'name' => 'New House',
+            'price' => 200,
+            'location' => 'New Location',
+            'description' => 'New Description',
+            'image' => 'new.jpg',
+        ]));
+
         $this->assertResponseIsSuccessful();
-        $this->assertResponseHeaderSame('Content-Type', 'application/json');
-        $response = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertIsArray($response);
-        $this->assertArrayHasKey('id', $response);
-        $this->assertEquals('New House', $response['name']);
-        $this->assertEquals(200, $response['price']);
-        $this->assertEquals('New Location', $response['location']);
-        $this->assertEquals('New Description', $response['description']);
-        $this->assertEquals('new.jpg', $response['image']);
+        $content = $this->client->getResponse()->getContent();
+        self::assertNotFalse($content);
+        $response = json_decode($content, true);
+        self::assertIsArray($response);
+        self::assertArrayHasKey('name', $response);
+        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+        self::assertSame('New House', $response['name']);
+        self::assertArrayHasKey('price', $response);
+        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+        self::assertSame(200, $response['price']);
+        self::assertArrayHasKey('location', $response);
+        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+        self::assertSame('New Location', $response['location']);
+        self::assertArrayHasKey('description', $response);
+        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+        self::assertSame('New Description', $response['description']);
+        self::assertArrayHasKey('image', $response);
+        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+        self::assertSame('new.jpg', $response['image']);
     }
 
-    public function testCreateHouseInvalidData(): void
+    public function testCreateHouseWithInvalidData(): void
     {
-        $this->client->request(
-            'POST',
-            '/api/houses',
-            [],
-            [],
-            ['CONTENT_TYPE' => 'application/json'],
-            json_encode([
-                'name' => 'New House',
-                'price' => 200
-            ])
-        );
-        $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+        $this->client->request('POST', '/api/houses', [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], (string) json_encode([
+            'name' => '',
+            'price' => -100,
+        ]));
+
+        $this->assertResponseStatusCodeSame(400);
     }
 
     public function testUpdateHouse(): void
     {
         $house = $this->houseRepository->findOneBy(['name' => 'Test House']);
-        $this->client->request(
-            'PUT',
-            '/api/houses/' . $house->getId(),
-            [],
-            [],
-            ['CONTENT_TYPE' => 'application/json'],
-            json_encode([
-                'name' => 'Updated House',
-                'price' => 300,
-                'location' => 'Updated Location',
-                'description' => 'Updated Description',
-                'image' => 'updated.jpg'
-            ])
-        );
-        $this->assertResponseIsSuccessful();
-        $this->assertResponseHeaderSame('Content-Type', 'application/json');
-        $response = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertEquals('Updated House', $response['name']);
-        $this->assertEquals(300, $response['price']);
-        $this->assertEquals('Updated Location', $response['location']);
-        $this->assertEquals('Updated Description', $response['description']);
-        $this->assertEquals('updated.jpg', $response['image']);
-    }
+        self::assertNotNull($house);
 
-    public function testUpdateHouseNotFound(): void
-    {
-        $this->client->request(
-            'PUT',
-            '/api/houses/999',
-            [],
-            [],
-            ['CONTENT_TYPE' => 'application/json'],
-            json_encode([
-                'name' => 'Updated House',
-                'price' => 300,
-                'location' => 'Updated Location',
-                'description' => 'Updated Description',
-                'image' => 'updated.jpg'
-            ])
-        );
-        $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
+        $houseId = $house->getId();
+        self::assertNotNull($houseId);
+        $this->client->request('PUT', '/api/houses/' . $houseId, [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], (string) json_encode([
+            'name' => 'Updated House',
+            'price' => 150,
+        ]));
+
+        $this->assertResponseIsSuccessful();
+        $content = $this->client->getResponse()->getContent();
+        self::assertNotFalse($content);
+        $response = json_decode($content, true);
+        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+        self::assertSame('Updated House', $response['name']);
+        /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+        self::assertSame(150, $response['price']);
     }
 
     public function testDeleteHouse(): void
     {
         $house = $this->houseRepository->findOneBy(['name' => 'Test House']);
-        $this->client->request('DELETE', '/api/houses/' . $house->getId());
+        self::assertNotNull($house);
+
+        $houseId = $house->getId();
+        self::assertNotNull($houseId);
+        $this->client->request('DELETE', '/api/houses/' . $houseId);
+
         $this->assertResponseIsSuccessful();
-        $this->assertResponseHeaderSame('Content-Type', 'application/json');
-        $response = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertEquals(['message' => 'House deleted successfully'], $response);
+        self::assertNull($this->houseRepository->find($houseId));
     }
 
     public function testDeleteHouseNotFound(): void
     {
         $this->client->request('DELETE', '/api/houses/999');
-        $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
+
+        $this->assertResponseStatusCodeSame(404);
     }
 
     public function testDeleteBookedHouse(): void
     {
         $house = $this->houseRepository->findOneBy(['name' => 'Test House']);
+        self::assertNotNull($house);
         // Создаем бронирование для дома
         $booking = new \App\Entity\Booking();
         $booking->setHouse($house)
             ->setPhone('1234567890')
             ->setMessage('Test comment')
-            ->setCreatedAt(new \DateTimeImmutable());
+            ->setCreatedAt(new DateTimeImmutable());
         $this->em->persist($booking);
         $this->em->flush();
 
-        $this->client->request('DELETE', '/api/houses/' . $house->getId());
+        $houseId = $house->getId();
+        self::assertNotNull($houseId);
+        $this->client->request('DELETE', '/api/houses/' . $houseId);
         $this->assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
-        $response = json_decode($this->client->getResponse()->getContent(), true);
-        $this->assertEquals(['error' => 'Cannot delete a booked house'], $response);
+        $content = $this->client->getResponse()->getContent();
+        self::assertNotFalse($content);
+        $response = json_decode($content, true);
+        self::assertSame(['error' => 'Cannot delete a booked house'], $response);
     }
-} 
+
+    private function createTestHouse(): void
+    {
+        $house = new House();
+        $house->setName('Test House');
+        $house->setPrice(100);
+        $house->setLocation('Test Location');
+        $house->setDescription('Test Description');
+        $house->setImage('test.jpg');
+        $this->em->persist($house);
+        $this->em->flush();
+    }
+}

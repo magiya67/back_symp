@@ -1,18 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use Doctrine\DBAL\Connection;
+use Override;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
+use function sprintf;
+
+/** @psalm-suppress UnusedClass */
 #[AsCommand(
     name: 'app:booking:check-table',
     description: 'Проверяет структуру таблицы booking через Doctrine.'
 )]
-class CheckBookingTableCommand extends Command
+final class CheckBookingTableCommand extends Command
 {
     private Connection $connection;
 
@@ -22,6 +28,7 @@ class CheckBookingTableCommand extends Command
         $this->connection = $connection;
     }
 
+    #[Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $sm = $this->connection->createSchemaManager();
@@ -31,10 +38,11 @@ class CheckBookingTableCommand extends Command
             $output->writeln(sprintf(
                 '<comment>%s</comment> (тип: %s, nullable: %s)',
                 $column->getName(),
-                $column->getType()->getName(),
+                $column->getType()->getSQLDeclaration([], $this->connection->getDatabasePlatform()),
                 $column->getNotnull() ? 'false' : 'true'
             ));
         }
+
         return Command::SUCCESS;
     }
-} 
+}

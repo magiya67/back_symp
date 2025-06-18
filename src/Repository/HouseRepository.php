@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\House;
@@ -9,18 +11,24 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<House>
  *
- * @method House|null find($id, $lockMode = null, $lockVersion = null)
- * @method House|null findOneBy(array $criteria, array $orderBy = null)
+ * @method null|House find($id, $lockMode = null, $lockVersion = null)
+ * @method null|House findOneBy(array $criteria, array $orderBy = null)
  * @method House[]    findAll()
  * @method House[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class HouseRepository extends ServiceEntityRepository
+final class HouseRepository extends ServiceEntityRepository
 {
+    /**
+     * @psalm-suppress UnusedParam, PossiblyUnusedMethod
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, House::class);
     }
 
+    /**
+     * @psalm-suppress UnusedParam
+     */
     public function save(House $entity, bool $flush = false): void
     {
         $this->getEntityManager()->persist($entity);
@@ -30,6 +38,9 @@ class HouseRepository extends ServiceEntityRepository
         }
     }
 
+    /**
+     * @psalm-suppress UnusedParam
+     */
     public function remove(House $entity, bool $flush = false): void
     {
         $this->getEntityManager()->remove($entity);
@@ -38,4 +49,4 @@ class HouseRepository extends ServiceEntityRepository
             $this->getEntityManager()->flush();
         }
     }
-} 
+}
