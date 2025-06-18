@@ -1,16 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\Booking;
 use App\Repository\BookingRepository;
 use App\Repository\HouseRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
+use function count;
+
+use const DATE_ATOM;
+
+/** @psalm-suppress UnusedClass */
 #[Route('/api/bookings')]
 final class BookingController extends AbstractController
 {
@@ -18,17 +26,18 @@ final class BookingController extends AbstractController
         private readonly BookingRepository $bookingRepository,
         private readonly HouseRepository $houseRepository,
         private readonly EntityManagerInterface $em
-    ) {}
+    ) {
+    }
 
     #[Route('', name: 'api_booking_create', methods: ['POST'])]
     public function createBooking(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-        if (!isset($data['phone'], $data['house_id'])) {
+        if (! isset($data['phone'], $data['house_id'])) {
             return $this->json(['error' => 'phone and house_id are required'], 400);
         }
-        $house = $this->houseRepository->find((int)$data['house_id']);
-        if (!$house) {
+        $house = $this->houseRepository->find((int) $data['house_id']);
+        if (! $house) {
             return $this->json(['error' => 'House not found'], 404);
         }
         // Проверка, что дом не забронирован
@@ -41,8 +50,9 @@ final class BookingController extends AbstractController
             ->setPhone($data['phone'])
             ->setMessage($data['comment'] ?? '')
             ->setName($data['name'] ?? null)
-            ->setCreatedAt(new \DateTimeImmutable());
+            ->setCreatedAt(new DateTimeImmutable());
         $this->bookingRepository->save($booking, true);
+
         return $this->json(['success' => true, 'booking' => $this->serializeBooking($booking)]);
     }
 
@@ -51,7 +61,7 @@ final class BookingController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
         $booking = $this->bookingRepository->find($id);
-        if (!$booking) {
+        if (! $booking) {
             return $this->json(['error' => 'Booking not found'], 404);
         }
         if (isset($data['phone'])) {
@@ -64,6 +74,7 @@ final class BookingController extends AbstractController
             $booking->setName($data['name']);
         }
         $this->em->flush();
+
         return $this->json($this->serializeBooking($booking));
     }
 
@@ -71,20 +82,22 @@ final class BookingController extends AbstractController
     public function deleteBooking(int $id): JsonResponse
     {
         $booking = $this->bookingRepository->find($id);
-        if (!$booking) {
+        if (! $booking) {
             return $this->json(['error' => 'Booking not found'], 404);
-            }
+        }
         $this->bookingRepository->remove($booking, true);
-            return $this->json(['message' => 'Booking deleted successfully']);
+
+        return $this->json(['message' => 'Booking deleted successfully']);
     }
 
     #[Route('/{id}', name: 'api_booking_get', methods: ['GET'])]
     public function getBooking(int $id): JsonResponse
     {
         $booking = $this->bookingRepository->find($id);
-        if (!$booking) {
+        if (! $booking) {
             return $this->json(['error' => 'Booking not found'], 404);
         }
+
         return $this->json($this->serializeBooking($booking));
     }
 
@@ -92,7 +105,8 @@ final class BookingController extends AbstractController
     public function getBookings(): JsonResponse
     {
         $bookings = $this->bookingRepository->findAll();
-        return $this->json(array_map(fn($b) => $this->serializeBooking($b), $bookings));
+
+        return $this->json(array_map(fn ($b) => $this->serializeBooking($b), $bookings));
     }
 
     private function serializeBooking(Booking $booking): array
@@ -111,4 +125,4 @@ final class BookingController extends AbstractController
     // Пример:
     // $bookings = $this->bookingDataService->getBookings();
     // $this->bookingDataService->createBooking($booking);
-} 
+}

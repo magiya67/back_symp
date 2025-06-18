@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="3"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    cacheDirectory="var/cache/.psalm-cache"
+    ignoreInternalFunctionFalseReturn="false"
+    ignoreInternalFunctionNullReturn="false"
+    ensureArrayIntOffsetsExist="true"
+    ensureArrayStringOffsetsExist="true"
+    strictBinaryOperands="true"
+>
+    <projectFiles>
+        <directory name="src"/>
+        <directory name="tests"/>
+        <directory name="config"/>
+        <directory name="public"/>
+        <ignoreFiles>
+            <directory name="bin"/>
+            <directory name="var"/>
+            <directory name="vendor"/>
+            <directory name="migrations"/>
+            <directory name="tests/data"/>
+            <file name="config/preload.php"/>
+            <file name="public/index.php"/>
+        </ignoreFiles>
+    </projectFiles>
+</psalm>

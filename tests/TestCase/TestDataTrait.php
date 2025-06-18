@@ -1,13 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\TestCase;
 
 use Symfony\Component\Filesystem\Filesystem;
 
+use function dirname;
+
 trait TestDataTrait
 {
     protected string $testHousesFile;
+
     protected string $testBookingsFile;
+
     protected Filesystem $filesystem;
 
     protected function setupTestData(): void
@@ -15,7 +21,7 @@ trait TestDataTrait
         $this->testHousesFile = sys_get_temp_dir() . '/test_houses.csv';
         $this->testBookingsFile = sys_get_temp_dir() . '/test_bookings.csv';
         $this->filesystem = new Filesystem();
-        
+
         // Copy test data files to temp directory
         $this->filesystem->copy(
             dirname(__DIR__) . '/data/test_houses.csv',
@@ -31,4 +37,4 @@ trait TestDataTrait
     {
         $this->filesystem->remove([$this->testHousesFile, $this->testBookingsFile]);
     }
-} 
+}

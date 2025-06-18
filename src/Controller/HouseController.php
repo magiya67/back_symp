@@ -1,16 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\House;
-use App\Repository\HouseRepository;
 use App\Repository\BookingRepository;
+use App\Repository\HouseRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Attribute\Route;
 
+use function is_array;
+
+/** @psalm-suppress UnusedClass */
 #[Route('/api/houses')]
 final class HouseController extends AbstractController
 {
@@ -18,30 +23,33 @@ final class HouseController extends AbstractController
         private readonly HouseRepository $houseRepository,
         private readonly BookingRepository $bookingRepository,
         private readonly EntityManagerInterface $em
-    ) {}
+    ) {
+    }
 
     #[Route('/free', name: 'api_houses_free', methods: ['GET'])]
     public function freeHouses(): JsonResponse
     {
         $houses = $this->houseRepository->findAll();
-        $freeHouses = array_filter($houses, function(House $house) {
+        $freeHouses = array_filter($houses, static function (House $house) {
             return $house->getBookings()->isEmpty();
         });
-        return $this->json(array_values(array_map(fn($h) => $this->serializeHouse($h), $freeHouses)));
+
+        return $this->json(array_values(array_map(fn ($h) => $this->serializeHouse($h), $freeHouses)));
     }
 
     #[Route('/{id}', name: 'api_houses_delete', methods: ['DELETE'])]
     public function deleteHouse(int $id): JsonResponse
     {
         $house = $this->houseRepository->find($id);
-        if (!$house) {
+        if (! $house) {
             return $this->json(['error' => 'House not found'], 404);
         }
         $this->em->refresh($house);
-        if (!$house->getBookings()->isEmpty()) {
+        if (! $house->getBookings()->isEmpty()) {
             return $this->json(['error' => 'Cannot delete a booked house'], 400);
         }
         $this->houseRepository->remove($house, true);
+
         return $this->json(['message' => 'House deleted successfully'], 200);
     }
 
@@ -49,20 +57,21 @@ final class HouseController extends AbstractController
     public function updateHouse(int $id, Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-        if (!is_array($data)) {
+        if (! is_array($data)) {
             return $this->json(['error' => 'Invalid input'], 400);
         }
         $house = $this->houseRepository->find($id);
-        if (!$house) {
+        if (! $house) {
             return $this->json(['error' => 'House not found'], 404);
         }
         foreach (['name', 'price', 'location', 'description', 'image'] as $field) {
             if (isset($data[$field])) {
                 $setter = 'set' . ucfirst($field);
-                $house->$setter($data[$field]);
+                $house->{$setter}($data[$field]);
             }
         }
         $this->em->flush();
+
         return $this->json($this->serializeHouse($house));
     }
 
@@ -70,7 +79,14 @@ final class HouseController extends AbstractController
     public function createHouse(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-        if (!is_array($data) || empty($data['name']) || !isset($data['price'], $data['location'], $data['description'], $data['image'])) {
+        if (
+            ! is_array($data) || empty($data['name']) || ! isset(
+                $data['price'],
+                $data['location'],
+                $data['description'],
+                $data['image']
+            )
+        ) {
             return $this->json(['error' => 'Invalid input'], 400);
         }
         $house = new House();
@@ -80,6 +96,7 @@ final class HouseController extends AbstractController
             ->setDescription($data['description'])
             ->setImage($data['image']);
         $this->houseRepository->save($house, true);
+
         return $this->json($this->serializeHouse($house));
     }
 
@@ -87,9 +104,10 @@ final class HouseController extends AbstractController
     public function getHouse(int $id): JsonResponse
     {
         $house = $this->houseRepository->find($id);
-        if (!$house) {
+        if (! $house) {
             return $this->json(['error' => 'House not found'], 404);
         }
+
         return $this->json($this->serializeHouse($house));
     }
 
@@ -97,7 +115,8 @@ final class HouseController extends AbstractController
     public function getHouses(): JsonResponse
     {
         $houses = $this->houseRepository->findAll();
-        return $this->json(array_map(fn($h) => $this->serializeHouse($h), $houses));
+
+        return $this->json(array_map(fn ($h) => $this->serializeHouse($h), $houses));
     }
 
     private function serializeHouse(House $house): array
@@ -111,5 +130,4 @@ final class HouseController extends AbstractController
             'image' => $house->getImage(),
         ];
     }
-
-} 
+}
